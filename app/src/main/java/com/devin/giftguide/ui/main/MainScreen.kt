@@ -3,6 +3,7 @@ package com.devin.giftguide.ui.main
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.FlowRow
@@ -10,23 +11,28 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.devin.giftguide.data.model.Product
@@ -44,148 +50,259 @@ fun MainScreen(
 
     Scaffold(
         bottomBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                if (quizState.errorMessage != null) {
-                    Text(
-                        text = quizState.errorMessage ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !quizState.isLoading,
-                    onClick = { viewModel.submitQuiz() }
-                ) {
-                    if (quizState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Finding gifts…")
-                    } else {
-                        Text("See gift ideas")
-                    }
-                }
-            }
+            BottomActionBar(
+                isLoading = quizState.isLoading,
+                errorMessage = quizState.errorMessage,
+                onSubmit = { viewModel.submitQuiz() }
+            )
         }
     ) { innerPadding ->
-        Column(
+        Surface(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            // QUIZ SECTION (scrollable)
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "Find the perfect gift",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text("Who is this for?", style = MaterialTheme.typography.labelLarge)
-                SingleSelectChipsRow(
-                    options = GiftQuizOptions.relationships,
-                    selected = quizState.relationship,
-                    onSelected = { viewModel.updateRelationship(it) }
-                )
-
-                Text("Age range", style = MaterialTheme.typography.labelLarge)
-                SingleSelectChipsRow(
-                    options = GiftQuizOptions.ageRanges,
-                    selected = quizState.ageRange,
-                    onSelected = { viewModel.updateAgeRange(it) }
-                )
-
-                Text("Occasion", style = MaterialTheme.typography.labelLarge)
-                SingleSelectChipsRow(
-                    options = GiftQuizOptions.occasions,
-                    selected = quizState.occasion,
-                    onSelected = { viewModel.updateOccasion(it) }
-                )
-
-                Text("Budget", style = MaterialTheme.typography.labelLarge)
-                BudgetSlider(
-                    min = quizState.budgetMin,
-                    max = quizState.budgetMax,
-                    onChange = { min, max -> viewModel.updateBudget(min, max) }
-                )
-
-                Text("Interests", style = MaterialTheme.typography.labelLarge)
-                MultiSelectChips(
-                    options = GiftQuizOptions.interests,
-                    selected = quizState.selectedInterests,
-                    onToggle = { viewModel.toggleInterest(it) }
-                )
-
-                Text("Vibe", style = MaterialTheme.typography.labelLarge)
-                SingleSelectChipsRow(
-                    options = GiftQuizOptions.vibes,
-                    selected = quizState.vibe,
-                    onSelected = { viewModel.updateVibe(it) }
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Recommendations",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Toggle: For you / Saved
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // App header
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    FilterChip(
-                        selected = !showSavedOnly,
-                        onClick = { showSavedOnly = false },
-                        label = { Text("For you") }
+                    Text(
+                        text = "SmartGift Guide",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
                     )
-                    FilterChip(
-                        selected = showSavedOnly,
-                        onClick = { showSavedOnly = true },
-                        label = { Text("Saved") }
+                    Text(
+                        text = "Tell me about them and I’ll find something they’ll actually like.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
+                // Quiz card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1.1f),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        SectionHeader("Who is this for?")
+                        SingleSelectChipsRow(
+                            options = GiftQuizOptions.relationships,
+                            selected = quizState.relationship,
+                            onSelected = { viewModel.updateRelationship(it) }
+                        )
+
+                        SectionHeader("Age range")
+                        SingleSelectChipsRow(
+                            options = GiftQuizOptions.ageRanges,
+                            selected = quizState.ageRange,
+                            onSelected = { viewModel.updateAgeRange(it) }
+                        )
+
+                        SectionHeader("Occasion")
+                        SingleSelectChipsRow(
+                            options = GiftQuizOptions.occasions,
+                            selected = quizState.occasion,
+                            onSelected = { viewModel.updateOccasion(it) }
+                        )
+
+                        SectionHeader("Budget")
+                        BudgetSlider(
+                            min = quizState.budgetMin,
+                            max = quizState.budgetMax,
+                            onChange = { min, max -> viewModel.updateBudget(min, max) }
+                        )
+
+                        SectionHeader("Interests")
+                        MultiSelectChips(
+                            options = GiftQuizOptions.interests,
+                            selected = quizState.selectedInterests,
+                            onToggle = { viewModel.toggleInterest(it) }
+                        )
+
+                        SectionHeader("Vibe")
+                        SingleSelectChipsRow(
+                            options = GiftQuizOptions.vibes,
+                            selected = quizState.vibe,
+                            onSelected = { viewModel.updateVibe(it) }
+                        )
+                    }
+                }
+
+                // Recommendations area
+                val displayedItems =
+                    if (showSavedOnly) recommendations.filter { savedIds.contains(it.productId) }
+                    else recommendations
+
+                RecommendationsSection(
+                    quizState = quizState,
+                    showSavedOnly = showSavedOnly,
+                    onToggleTab = { showSavedOnly = it },
+                    items = displayedItems,
+                    savedIds = savedIds,
+                    onToggleFavorite = { product -> viewModel.toggleSaved(product) },
+                    modifier = Modifier.weight(1f)
+                )
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // derive list for Saved tab from recommendations + savedIds
-            val displayedItems =
-                if (showSavedOnly) recommendations.filter { savedIds.contains(it.productId) }
-                else recommendations
-
-            RecommendationsList(
-                items = displayedItems,
-                savedIds = savedIds,
-                onToggleFavorite = { product -> viewModel.toggleSaved(product) },
-                modifier = Modifier.weight(1f),
-                showSavedOnly = showSavedOnly
-            )
         }
     }
 }
 
+// --- bottom bar ---
+
+@Composable
+private fun BottomActionBar(
+    isLoading: Boolean,
+    errorMessage: String?,
+    onSubmit: () -> Unit
+) {
+    Surface(
+        tonalElevation = 4.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            if (!errorMessage.isNullOrBlank()) {
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
+                onClick = onSubmit
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Finding gifts…")
+                } else {
+                    Text("See gift ideas")
+                }
+            }
+        }
+    }
+}
+
+// --- recommendations section ---
+
+@Composable
+private fun RecommendationsSection(
+    quizState: GiftQuizUiState,
+    showSavedOnly: Boolean,
+    onToggleTab: (Boolean) -> Unit,
+    items: List<Product>,
+    savedIds: Set<String>,
+    onToggleFavorite: (Product) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Recommendations",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            // Small summary "chip"
+            SummaryChip(quizState = quizState)
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FilterChip(
+                selected = !showSavedOnly,
+                onClick = { onToggleTab(false) },
+                label = { Text("For you") }
+            )
+            FilterChip(
+                selected = showSavedOnly,
+                onClick = { onToggleTab(true) },
+                label = { Text("Saved") }
+            )
+        }
+
+        RecommendationsList(
+            items = items,
+            savedIds = savedIds,
+            onToggleFavorite = onToggleFavorite,
+            showSavedOnly = showSavedOnly
+        )
+    }
+}
+
+@Composable
+private fun SummaryChip(quizState: GiftQuizUiState) {
+    val summaryText = buildString {
+        append(quizState.relationship.replaceFirstChar { it.uppercase() })
+        append(" • ")
+        append(quizState.ageRange)
+        append(" • ")
+        append(quizState.occasion.replaceFirstChar { it.uppercase() })
+        append(" • $${quizState.budgetMin.toInt()}–$${quizState.budgetMax.toInt()}")
+    }
+
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+    ) {
+        Text(
+            text = summaryText,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
 // --- helper composables ---
+
+@Composable
+private fun SectionHeader(label: String) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Medium,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+}
 
 @Composable
 private fun SingleSelectChipsRow(
@@ -202,7 +319,13 @@ private fun SingleSelectChipsRow(
             FilterChip(
                 selected = option == selected,
                 onClick = { onSelected(option) },
-                label = { Text(option) }
+                label = {
+                    Text(
+                        option.replaceFirstChar { it.uppercase() },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             )
         }
     }
@@ -225,7 +348,13 @@ private fun MultiSelectChips(
             FilterChip(
                 selected = isSelected,
                 onClick = { onToggle(option) },
-                label = { Text(option) }
+                label = {
+                    Text(
+                        option.replaceFirstChar { it.uppercase() },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             )
         }
     }
@@ -237,8 +366,12 @@ private fun BudgetSlider(
     max: Float,
     onChange: (Float, Float) -> Unit
 ) {
-    Column {
-        Text(text = "$${min.toInt()} – $${max.toInt()}")
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = "$${min.toInt()} – $${max.toInt()}",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
         Slider(
             value = (min + max) / 2f,
             onValueChange = { center ->
@@ -262,7 +395,9 @@ private fun RecommendationsList(
 ) {
     if (items.isEmpty()) {
         Box(
-            modifier = modifier.fillMaxWidth(),
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -271,15 +406,18 @@ private fun RecommendationsList(
                 } else {
                     "Fill out the quiz and tap \"See gift ideas\" to get suggestions."
                 },
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         return
     }
 
     LazyColumn(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         items(items) { product ->
             val isSaved = savedIds.contains(product.productId)
@@ -310,10 +448,12 @@ private fun RecommendationCard(
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                         context.startActivity(intent)
                     } catch (_: Exception) {
-                        // ignore/log as needed
+                        // ignore/log
                     }
                 }
-            }
+            },
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -327,7 +467,9 @@ private fun RecommendationCard(
                 Image(
                     painter = rememberAsyncImagePainter(imageUrl),
                     contentDescription = product.toString(),
-                    modifier = Modifier.size(72.dp),
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(14.dp)),
                     contentScale = ContentScale.Crop
                 )
             }
@@ -335,32 +477,53 @@ private fun RecommendationCard(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 8.dp)
+                    .padding(end = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 val nameText = try { product.name } catch (_: Exception) { "Product" }
                 Text(
                     text = nameText,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
 
-                val priceText = try { product.price?.toString() } catch (_: Exception) { null }
-                if (!priceText.isNullOrBlank()) {
-                    Text(
-                        text = "$$priceText",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                // Price + store line
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val priceText = try { product.price?.toString() } catch (_: Exception) { null }
+                    if (!priceText.isNullOrBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        ) {
+                            Text(
+                                text = "$$priceText",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
 
-                val tagsText = try { product.tags?.joinToString(" • ") } catch (_: Exception) { null }
-                if (!tagsText.isNullOrBlank()) {
-                    Text(
-                        text = tagsText,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    val store = try { product.tags?.firstOrNull() } catch (_: Exception) { null }
+                    if (!store.isNullOrBlank()) {
+                        Text(
+                            text = store,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
 
+            // Save button
             TextButton(onClick = onToggleFavorite) {
                 Text(
                     text = if (isSaved) "♥ Saved" else "♡ Save",
